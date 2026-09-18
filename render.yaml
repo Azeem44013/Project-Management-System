@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: project-bolt-server
+    env: node
+    plan: free
+    buildCommand: "npm install && npm run build || true"
+    startCommand: "node index.js"
+    envVars:
+      - key: SUPABASE_URL
+      - key: SUPABASE_SERVICE_KEY
+
+  - type: web
+    name: project-bolt-frontend
+    env: static
+    plan: free
+    buildCommand: "cd project && npm ci && npm run build"
+    staticPublishPath: project/dist
+    envVars:
+      - key: VITE_API_URL
