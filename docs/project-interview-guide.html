@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ProjectHub - Interview Project Guide</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 17mm; }
+  :root { --ink:#172033; --muted:#536174; --line:#d9e1ea; --blue:#1f5f8b; --blue-light:#eaf3f9; --green:#1d7a5a; --gold:#a05c16; }
+  * { box-sizing:border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; color:var(--ink); font-size:10.5pt; line-height:1.48; margin:0; }
+  h1 { color:#103b5c; font-size:28pt; line-height:1.08; margin:0 0 10px; }
+  h2 { color:#103b5c; font-size:17pt; border-bottom:2px solid var(--blue); padding-bottom:4px; margin:24px 0 10px; }
+  h3 { color:#1d4f70; font-size:12pt; margin:15px 0 5px; }
+  p { margin:5px 0 9px; }
+  ul, ol { margin:5px 0 10px 22px; padding:0; }
+  li { margin:3px 0; }
+  code { font-family: Consolas, monospace; font-size:9pt; color:#174d70; }
+  .cover { min-height:245mm; display:flex; flex-direction:column; justify-content:center; border-left:9px solid var(--blue); padding:22mm 18mm; background:linear-gradient(135deg,#f5f9fc,#fff 62%); }
+  .eyebrow { text-transform:uppercase; letter-spacing:2px; color:var(--green); font-weight:bold; font-size:9pt; }
+  .subtitle { color:var(--muted); font-size:14pt; max-width:470px; }
+  .meta { margin-top:35mm; color:var(--muted); border-top:1px solid var(--line); padding-top:9px; }
+  .box { border:1px solid var(--line); border-radius:6px; padding:11px 13px; margin:10px 0; background:#fbfdff; }
+  .callout { border-left:4px solid var(--green); background:#eef8f3; padding:10px 13px; margin:10px 0; }
+  .warning { border-left:4px solid var(--gold); background:#fff7eb; padding:10px 13px; margin:10px 0; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .grid .box { margin:0; }
+  table { width:100%; border-collapse:collapse; margin:8px 0 12px; font-size:9.5pt; }
+  th { background:#eaf3f9; color:#174d70; text-align:left; }
+  th, td { border:1px solid var(--line); padding:6px 7px; vertical-align:top; }
+  .flow { font-family:Consolas,monospace; background:#172033; color:#eaf3f9; padding:12px; border-radius:5px; white-space:pre-wrap; font-size:9pt; line-height:1.55; }
+  .page-break { page-break-before:always; }
+  .small { color:var(--muted); font-size:9pt; }
+  .answer { color:#213d52; font-style:italic; }
+  footer { color:#718096; font-size:8pt; border-top:1px solid var(--line); padding-top:5px; margin-top:22px; }
+</style>
+</head>
+<body>
+<section class="cover">
+  <div class="eyebrow">Interview Project Guide</div>
+  <h1>ProjectHub<br>Management System</h1>
+  <p class="subtitle">A full-stack project and task management application built with React, TypeScript, Express, Supabase, and Tailwind CSS.</p>
+  <div class="callout"><strong>One-sentence explanation:</strong> ProjectHub lets authenticated users create projects, organize tasks inside them, track progress, and view a dashboard backed by Supabase data and row-level security.</div>
+  <div class="meta">Prepared from the implementation in the ProjectHub repository<br>Suggested use: a 5-10 minute technical project walkthrough</div>
+</section>
+
+<section>
+<h2>1. What Problem It Solves</h2>
+<p>ProjectHub gives an individual user one place to manage projects and the work belonging to each project. Instead of keeping project status, task priority, due dates, and completion progress in separate places, the application connects them in one workflow.</p>
+<div class="grid">
+  <div class="box"><h3>Core capabilities</h3><ul><li>Email/password registration and sign-in</li><li>Project creation, editing, filtering, and deletion</li><li>Task creation, editing, deletion, and status changes</li><li>Dashboard statistics and completion progress</li></ul></div>
+  <div class="box"><h3>Technical goals</h3><ul><li>Type-safe frontend models</li><li>Reusable form, modal, badge, and spinner components</li><li>Owner-scoped database access</li><li>Deployable frontend and backend</li></ul></div>
+</div>
+
+<h2>2. Technology Stack</h2>
+<table><tr><th>Layer</th><th>Technology</th><th>Role</th></tr>
+<tr><td>Frontend</td><td>React 18, TypeScript, Vite</td><td>Component-based UI, routing, and fast development/build tooling.</td></tr>
+<tr><td>Styling</td><td>Tailwind CSS</td><td>Utility-based responsive layout and visual states.</td></tr>
+<tr><td>Icons</td><td>Lucide React</td><td>Consistent interface icons.</td></tr>
+<tr><td>Authentication</td><td>Supabase Auth</td><td>Email/password registration, sessions, and sign-out.</td></tr>
+<tr><td>Database</td><td>Supabase PostgreSQL</td><td>Projects, tasks, relationships, constraints, and timestamps.</td></tr>
+<tr><td>Backend</td><td>Node.js, Express, CORS, dotenv</td><td>Health endpoint, project/task REST endpoints, and production static hosting.</td></tr>
+<tr><td>Deployment</td><td>Vercel, Render, GitHub Actions</td><td>Frontend deployment and backend deployment automation.</td></tr></table>
+</section>
+
+<section>
+<h2>3. Frontend: Where It Starts and Ends</h2>
+<div class="flow">Browser loads index.html
+       |
+       v
+src/main.tsx -> createRoot(...).render(&lt;App /&gt;)
+       |
+       v
+src/App.tsx -> BrowserRouter + AuthProvider
+       |
+       +--> no session: Login/Register
+       |
+       +--> session: ProtectedRoutes -> AppLayout
+                              |
+                              +--> Dashboard
+                              +--> Projects
+                              +--> Project Detail</div>
+<h3>Frontend startup</h3>
+<p>The frontend starts with <code>npm run dev</code>, which runs Vite. The browser loads <code>index.html</code>, and <code>src/main.tsx</code> mounts the React application into the root DOM element.</p>
+<p><code>App.tsx</code> wraps the UI in <code>BrowserRouter</code> and <code>AuthProvider</code>. The authentication provider first restores the saved Supabase session, then listens for future authentication changes.</p>
+<h3>Protected navigation</h3>
+<p>While authentication is loading, the app shows a full-page spinner. If there is no user, private routes redirect to <code>/login</code>. If a user exists, the shared <code>AppLayout</code> provides navigation, user information, and sign-out.</p>
+<h3>Frontend ending point</h3>
+<p>A user interaction ends when the component validates input, calls the data API, receives a response, updates React state, and re-renders the screen. A production build ends at the <code>dist/</code> folder, which can be hosted as static files.</p>
+
+<h2>4. Main User Workflow</h2>
+<ol>
+<li><strong>Register or sign in.</strong> The Auth page validates the form and calls Supabase Auth.</li>
+<li><strong>Open the dashboard.</strong> The app loads projects and tasks and calculates totals, pending work, completed work, and completion rate.</li>
+<li><strong>Create a project.</strong> The user enters a name, description, status, and optional dates. Client validation prevents an empty name and an end date before the start date.</li>
+<li><strong>Open project details.</strong> The project page loads the project and only its related tasks.</li>
+<li><strong>Create and manage tasks.</strong> Each task has a name, description, priority, status, due date, and project relationship.</li>
+<li><strong>Track progress.</strong> Clicking a task status cycles it from pending to in progress to completed. The project progress bar is recalculated from completed tasks.</li>
+<li><strong>Search and filter.</strong> Projects can be filtered by name and status. Tasks can be filtered by name, status, and priority.</li>
+<li><strong>Edit or delete.</strong> Users can update records or delete a task/project after confirmation. Deleting a project cascades to its tasks.</li>
+<li><strong>Sign out.</strong> Supabase clears the session and the app returns to the login screen.</li>
+</ol>
+</section>
+
+<section class="page-break">
+<h2>5. Backend: Where It Starts and Ends</h2>
+<div class="flow">server/index.js
+    |
+    +--> dotenv loads environment variables
+    +--> Express creates the HTTP app
+    +--> CORS and JSON middleware run
+    +--> Supabase client is created
+    +--> routes are registered
+    +--> dist/ is served for production
+    +--> app.listen(PORT)
+
+HTTP request -> route handler -> Supabase query -> JSON/HTTP response</div>
+<h3>Backend startup</h3>
+<p>The backend starts with <code>npm start</code> or <code>npm run dev</code> inside the <code>server/</code> folder. It loads <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_KEY</code>, creates a Supabase client, registers middleware and routes, and listens on <code>PORT</code> or port 3000.</p>
+<h3>REST endpoints</h3>
+<table><tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr>
+<tr><td>GET</td><td><code>/health</code></td><td>Returns an availability check.</td></tr>
+<tr><td>GET</td><td><code>/projects</code></td><td>Returns projects ordered by creation date.</td></tr>
+<tr><td>GET</td><td><code>/projects/:id</code></td><td>Returns one project.</td></tr>
+<tr><td>GET</td><td><code>/tasks</code></td><td>Returns tasks with project information.</td></tr>
+<tr><td>GET</td><td><code>/projects/:id/tasks</code></td><td>Returns tasks for one project.</td></tr>
+<tr><td>POST</td><td><code>/tasks</code></td><td>Creates a task from the JSON request body.</td></tr>
+<tr><td>PUT</td><td><code>/tasks/:id</code></td><td>Updates a task.</td></tr>
+<tr><td>DELETE</td><td><code>/tasks/:id</code></td><td>Deletes a task and returns HTTP 204.</td></tr></table>
+<h3>Backend ending point</h3>
+<p>Each request ends when Express sends a status and response body. In production, unmatched routes fall back to <code>dist/index.html</code>, allowing the React router to handle browser routes.</p>
+<div class="warning"><strong>Architecture detail to explain honestly:</strong> The current React data functions in <code>src/lib/api.ts</code> call Supabase directly. The Express API is implemented as a parallel REST layer and is not currently the path used by those frontend functions.</div>
+
+<h2>6. Database and Security</h2>
+<p>The migration creates two related tables:</p>
+<table><tr><th>Table</th><th>Important fields</th><th>Relationship</th></tr>
+<tr><td><code>projects</code></td><td>id, name, description, status, dates, user_id, created_at</td><td>Owned by an authenticated user.</td></tr>
+<tr><td><code>tasks</code></td><td>id, name, description, priority, status, due_date, project_id, user_id, created_at</td><td>Belongs to a project; project deletion cascades.</td></tr></table>
+<p>PostgreSQL constraints restrict valid project statuses, task statuses, and task priorities. Row-level security policies allow authenticated users to select, insert, update, and delete only rows whose <code>user_id</code> matches <code>auth.uid()</code>.</p>
+
+<h2>7. A Strong Technical Explanation</h2>
+<p class="answer">"I built ProjectHub as a full-stack project management application. The frontend is a Vite React TypeScript app. It starts in <code>main.tsx</code>, restores authentication through Supabase, and uses React Router to separate public auth pages from protected dashboard pages. The dashboard and project detail pages use a small typed API module to read and mutate projects and tasks in Supabase. The database has owner-scoped row-level security, so a signed-in user can only work with their own data. I also added an Express backend with health, project, and task endpoints, and it can serve the compiled Vite frontend in production. The key workflow is sign in, create a project, add tasks, update task status, and use the dashboard to measure progress."</p>
+</section>
+
+<section>
+<h2>8. Engineering Decisions and Tradeoffs</h2>
+<div class="grid">
+<div class="box"><h3>Why TypeScript?</h3><p>Project and task states are represented by explicit interfaces and union types. This reduces invalid status/priority values and improves refactoring safety.</p></div>
+<div class="box"><h3>Why Supabase?</h3><p>It provides authentication, PostgreSQL, generated timestamps, and row-level security without requiring a custom identity system.</p></div>
+<div class="box"><h3>Why reusable UI components?</h3><p>Buttons, forms, modals, spinners, and badges keep the pages consistent and reduce duplicated UI behavior.</p></div>
+<div class="box"><h3>Why client-side filtering?</h3><p>The project list and loaded task list are small, so filtering in React gives immediate feedback without extra database requests.</p></div>
+</div>
+<h3>Future improvements worth mentioning</h3>
+<ul><li>Route frontend mutations through the Express API consistently, or remove the unused duplicate layer.</li><li>Add authenticated middleware to the Express routes before exposing them publicly.</li><li>Add automated tests for auth redirects, project CRUD, task status transitions, and RLS behavior.</li><li>Add pagination or server-side filtering for larger datasets.</li><li>Improve error reporting for failed dashboard task deletion and add optimistic updates where appropriate.</li></ul>
+
+<h2>9. Running the Project</h2>
+<table><tr><th>Purpose</th><th>Command</th><th>Result</th></tr>
+<tr><td>Frontend development</td><td><code>npm install<br>npm run dev</code></td><td>Starts Vite development server.</td></tr>
+<tr><td>Frontend validation</td><td><code>npm run lint<br>npm run typecheck</code></td><td>Checks style and TypeScript types.</td></tr>
+<tr><td>Frontend production build</td><td><code>npm run build</code></td><td>Creates <code>dist/</code>.</td></tr>
+<tr><td>Backend development</td><td><code>cd server<br>npm install<br>npm run dev</code></td><td>Starts Express with nodemon.</td></tr>
+<tr><td>Backend production</td><td><code>cd server<br>npm start</code></td><td>Starts Node and serves API/static files.</td></tr></table>
+<p class="small">Required configuration includes frontend Supabase variables such as <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code>. The backend uses <code>SUPABASE_URL</code> and <code>SUPABASE_SERVICE_KEY</code>.</p>
+<footer>ProjectHub interview guide | Generated from the Project Management System source tree</footer>
+</section>
+</body>
+</html>
