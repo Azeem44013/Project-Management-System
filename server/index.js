@@ -8,6 +8,12 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+app.use((req, res, next) => {
+  if (!req.url.startsWith('/api')) return next();
+  req.url = req.url.replace(/^\/api(?=\/|$)/, '') || '/';
+  next();
+});
+
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 
@@ -34,6 +40,46 @@ function requireSupabase(req, res, next) {
 }
 
 app.get('/health', (req, res) => res.json({ ok: true }));
+
+app.post('/auth/register', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+  const { email, password, fullName } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { full_name: fullName } },
+    });
+    if (error) return res.status(400).json({ error: error.message });
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/auth/login', async (req, res) => {
+  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: 'Email and password are required' });
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return res.status(401).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/auth/logout', requireSupabase, async (req, res) => {
+  try {
+    const { error } = await req.supabase.auth.signOut();
+    if (error) return res.status(400).json({ error: error.message });
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Projects
 app.get('/projects', requireSupabase, async (req, res) => {
@@ -93,6 +139,17 @@ app.get('/tasks', requireSupabase, async (req, res) => {
   try {
     const { data, error } = await req.supabase.from('tasks').select('*, projects(*)').order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/tasks/:id', requireSupabase, async (req, res) => {
+  try {
+    const { data, error } = await req.supabase.from('tasks').select('*, projects(*)').eq('id', req.params.id).maybeSingle();
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: 'Task not found' });
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });

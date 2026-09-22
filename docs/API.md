@@ -18,7 +18,7 @@ Unauthenticated requests return `401`.
 | Environment | Base URL | Example |
 |---|---|---|
 | Local Express | `http://localhost:3000` | `GET /projects` |
-| Vercel function | `/api?path=` | `GET /api?path=projects` |
+| Vercel function | `/api` | `GET /api/projects` |
 
 The frontend client selects the local URL from `VITE_API_URL`. When that variable is absent, it uses the Vercel function.
 
@@ -26,11 +26,21 @@ The frontend client selects the local URL from `VITE_API_URL`. When that variabl
 
 | Method | Local endpoint | Vercel request path | Response |
 |---|---|---|---|
-| GET | `/projects` | `projects` | `200 Project[]` |
-| GET | `/projects/:id` | `projects/:id` | `200 Project` or `404` |
-| POST | `/projects` | `projects` | `201 Project` |
-| PUT | `/projects/:id` | `projects/:id` | `200 Project` |
-| DELETE | `/projects/:id` | `projects/:id` | `204` |
+| GET | `/api/projects` | `/api/projects` | `200 Project[]` |
+| GET | `/api/projects/:id` | `/api/projects/:id` | `200 Project` or `404` |
+| POST | `/api/projects` | `/api/projects` | `201 Project` |
+| PUT | `/api/projects/:id` | `/api/projects/:id` | `200 Project` |
+| DELETE | `/api/projects/:id` | `/api/projects/:id` | `204` |
+
+## Authentication
+
+| Method | Endpoint | Response |
+|---|---|---|
+| POST | `/api/auth/register` | `201` auth data |
+| POST | `/api/auth/login` | `200` session and user |
+| POST | `/api/auth/logout` | `204` |
+
+Registration and login accept `{ "email": "...", "password": "...", "fullName": "..." }`. Logout requires the bearer token.
 
 Example project payload:
 
@@ -50,11 +60,12 @@ Valid project statuses: `not_started`, `in_progress`, `completed`.
 
 | Method | Local endpoint | Vercel request path | Response |
 |---|---|---|---|
-| GET | `/tasks` | `tasks` | `200 Task[]` with project data |
-| GET | `/projects/:id/tasks` | `projects/:id/tasks` | `200 Task[]` |
-| POST | `/tasks` | `tasks` | `201 Task` |
-| PUT | `/tasks/:id` | `tasks/:id` | `200 Task` |
-| DELETE | `/tasks/:id` | `tasks/:id` | `204` |
+| GET | `/api/tasks` | `/api/tasks` | `200 Task[]` with project data |
+| GET | `/api/tasks/:id` | `/api/tasks/:id` | `200 Task` or `404` |
+| GET | `/api/projects/:id/tasks` | `/api/projects/:id/tasks` | `200 Task[]` |
+| POST | `/api/tasks` | `/api/tasks` | `201 Task` |
+| PUT | `/api/tasks/:id` | `/api/tasks/:id` | `200 Task` |
+| DELETE | `/api/tasks/:id` | `/api/tasks/:id` | `204` |
 
 Example task payload:
 

@@ -8,18 +8,38 @@ function errorResponse(res, status, message) {
 }
 
 module.exports = async function handler(req, res) {
-	const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
 	if (!SUPABASE_URL || !SUPABASE_KEY) return errorResponse(res, 500, 'Supabase not configured');
-	if (!token) return errorResponse(res, 401, 'Authentication required');
-
-	const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, {
-		global: { headers: { Authorization: `Bearer ${token}` } },
-	});
-	const path = String(req.query.path || '').replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
+	const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+	const pathValue = String(req.query.path || req.url.replace(/^\/api\/?/, '').split('?')[0]);
+	const path = pathValue.replace(/^\/+|\/+$/g, '').split('/').filter(Boolean);
 	const [resource, id, child] = path;
 	const body = req.body || {};
+	const supabase = createClient(SUPABASE_URL, SUPABASE_KEY, token ? {
+		global: { headers: { Authorization: `Bearer ${token}` } },
+	} : undefined);
 
 	try {
+		if (resource === 'auth' && id === 'register' && req.method === 'POST') {
+			const { email, password, fullName } = body;
+			if (!email || !password) return errorResponse(res, 400, 'Email and password are required');
+			const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
+			if (error) return errorResponse(res, 400, error);
+			return res.status(201).json(data);
+		}
+		if (resource === 'auth' && id === 'login' && req.method === 'POST') {
+			const { email, password } = body;
+			if (!email || !password) return errorResponse(res, 400, 'Email and password are required');
+			const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+			if (error) return errorResponse(res, 401, error);
+			return res.status(200).json(data);
+		}
+		if (resource === 'auth' && id === 'logout' && req.method === 'POST') {
+			if (!token) return errorResponse(res, 401, 'Authentication required');
+			const { error } = await supabase.auth.signOut();
+			if (error) return errorResponse(res, 400, error);
+			return res.status(204).end();
+		}
+		if (!token) return errorResponse(res, 401, 'Authentication required');
 		if (resource === 'projects' && !id && req.method === 'GET') {
 			const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
 			if (error) return errorResponse(res, 500, error);
@@ -56,6 +76,12 @@ module.exports = async function handler(req, res) {
 		if (resource === 'tasks' && !id && req.method === 'GET') {
 			const { data, error } = await supabase.from('tasks').select('*, projects(*)').order('created_at', { ascending: false });
 			if (error) return errorResponse(res, 500, error);
+			return res.status(200).json(data);
+		}
+		if (resource === 'tasks' && id && !child && req.method === 'GET') {
+			const { data, error } = await supabase.from('tasks').select('*, projects(*)').eq('id', id).maybeSingle();
+			if (error) return errorResponse(res, 500, error);
+			if (!data) return errorResponse(res, 404, 'Task not found');
 			return res.status(200).json(data);
 		}
 		if (resource === 'tasks' && !id && req.method === 'POST') {

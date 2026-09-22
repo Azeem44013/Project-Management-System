@@ -6,7 +6,7 @@ const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
-  const url = API_URL === '/api' ? `${API_URL}?path=${encodeURIComponent(path.slice(1))}` : `${API_URL}${path}`;
+  const url = API_URL === '/api' ? `${API_URL}${path}` : `${API_URL}/api${path}`;
   const response = await fetch(url, {
     ...options,
     headers: {
