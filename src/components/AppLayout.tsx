@@ -1,8 +1,8 @@
 import { ReactNode, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { Button } from '@/components/ui/Button';
-import { FolderKanban, BarChart3, LogOut, Menu, X } from 'lucide-react';
+import { FolderKanban, BarChart3, LogOut, Menu } from 'lucide-react';
 import logoUrl from '@/assets/logo.svg';
 
 const navItems = [

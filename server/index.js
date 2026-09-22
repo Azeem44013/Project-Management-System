@@ -18,13 +18,27 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 }
 
+function getSupabaseForRequest(req) {
+  const token = req.headers.authorization?.replace(/^Bearer\s+/i, '');
+  if (!token) return null;
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+}
+
+function requireSupabase(req, res, next) {
+  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+  req.supabase = getSupabaseForRequest(req);
+  if (!req.supabase) return res.status(401).json({ error: 'Authentication required' });
+  next();
+}
+
 app.get('/health', (req, res) => res.json({ ok: true }));
 
 // Projects
-app.get('/projects', async (req, res) => {
-  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+app.get('/projects', requireSupabase, async (req, res) => {
   try {
-    const { data, error } = await supabase.from('projects').select('*').order('created_at', { ascending: false });
+    const { data, error } = await req.supabase.from('projects').select('*').order('created_at', { ascending: false });
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
   } catch (err) {
@@ -32,11 +46,11 @@ app.get('/projects', async (req, res) => {
   }
 });
 
-app.get('/projects/:id', async (req, res) => {
+app.get('/projects/:id', requireSupabase, async (req, res) => {
   const { id } = req.params;
-  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
   try {
-    const { data, error } = await supabase.from('projects').select('*').eq('id', id).single();
+    const { data, error } = await req.supabase.from('projects').select('*').eq('id', id).maybeSingle();
+    if (!data && !error) return res.status(404).json({ error: 'Project not found' });
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
   } catch (err) {
@@ -45,34 +59,9 @@ app.get('/projects/:id', async (req, res) => {
 });
 
 // Tasks
-app.get('/tasks', async (req, res) => {
-  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+app.post('/projects', requireSupabase, async (req, res) => {
   try {
-    const { data, error } = await supabase.from('tasks').select('*, projects(*)').order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/projects/:id/tasks', async (req, res) => {
-  const { id } = req.params;
-  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-  try {
-    const { data, error } = await supabase.from('tasks').select('*').eq('project_id', id).order('created_at', { ascending: false });
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/tasks', async (req, res) => {
-  const input = req.body;
-  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
-  try {
-    const { data, error } = await supabase.from('tasks').insert(input).select().single();
+    const { data, error } = await req.supabase.from('projects').insert(req.body).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.status(201).json(data);
   } catch (err) {
@@ -80,12 +69,9 @@ app.post('/tasks', async (req, res) => {
   }
 });
 
-app.put('/tasks/:id', async (req, res) => {
-  const { id } = req.params;
-  const input = req.body;
-  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+app.put('/projects/:id', requireSupabase, async (req, res) => {
   try {
-    const { data, error } = await supabase.from('tasks').update(input).eq('id', id).select().single();
+    const { data, error } = await req.supabase.from('projects').update(req.body).eq('id', req.params.id).select().single();
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
   } catch (err) {
@@ -93,11 +79,64 @@ app.put('/tasks/:id', async (req, res) => {
   }
 });
 
-app.delete('/tasks/:id', async (req, res) => {
-  const { id } = req.params;
-  if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+app.delete('/projects/:id', requireSupabase, async (req, res) => {
   try {
-    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    const { error } = await req.supabase.from('projects').delete().eq('id', req.params.id);
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/tasks', requireSupabase, async (req, res) => {
+  try {
+    const { data, error } = await req.supabase.from('tasks').select('*, projects(*)').order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/projects/:id/tasks', requireSupabase, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { data, error } = await req.supabase.from('tasks').select('*').eq('project_id', id).order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/tasks', requireSupabase, async (req, res) => {
+  const input = req.body;
+  try {
+    const { data, error } = await req.supabase.from('tasks').insert(input).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/tasks/:id', requireSupabase, async (req, res) => {
+  const { id } = req.params;
+  const input = req.body;
+  try {
+    const { data, error } = await req.supabase.from('tasks').update(input).eq('id', id).select().single();
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/tasks/:id', requireSupabase, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const { error } = await req.supabase.from('tasks').delete().eq('id', id);
     if (error) return res.status(500).json({ error: error.message });
     res.status(204).send();
   } catch (err) {

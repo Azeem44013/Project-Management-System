@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, FormEvent } from 'react';
+import { useEffect, useState, useMemo, useCallback, FormEvent } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   fetchProjectById,
@@ -47,7 +47,7 @@ export function ProjectDetailPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showEditProject, setShowEditProject] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!id) return;
     setLoading(true);
     setError('');
@@ -64,11 +64,11 @@ export function ProjectDetailPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
     load();
-  }, [id]);
+  }, [load]);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter((t) => {

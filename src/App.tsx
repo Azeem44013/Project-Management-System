@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from '@/context/AuthContext';
+import { AuthProvider } from '@/context/AuthContext';
+import { useAuth } from '@/context/useAuth';
 import { FullPageSpinner } from '@/components/ui/Spinner';
 import { LoginPage, RegisterPage } from '@/pages/Auth';
 import { AppLayout } from '@/components/AppLayout';

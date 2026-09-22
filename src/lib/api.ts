@@ -1,78 +1,70 @@
 import type { Project, Task, ProjectInput, TaskInput } from '@/types';
 import { supabase } from '@/lib/supabase';
 
-function throwIfError(error: { message: string } | null) {
-  if (error) throw new Error(error.message);
+const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '/api';
+
+async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const url = API_URL === '/api' ? `${API_URL}?path=${encodeURIComponent(path.slice(1))}` : `${API_URL}${path}`;
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null) as { error?: string } | null;
+    throw new Error(body?.error || `Request failed with status ${response.status}`);
+  }
+
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
 }
 
 // ---- Projects ----
 
 export async function fetchProjects(): Promise<Project[]> {
-  const { data, error } = await supabase
-    .from('projects')
-    .select('*')
-    .order('created_at', { ascending: false });
-  throwIfError(error);
-  return data ?? [];
+  return request<Project[]>('/projects');
 }
 
 export async function fetchProjectById(id: string): Promise<Project | null> {
-  const { data, error } = await supabase.from('projects').select('*').eq('id', id).maybeSingle();
-  throwIfError(error);
-  return data;
+  return request<Project>(`/projects/${id}`);
 }
 
 export async function createProject(input: ProjectInput): Promise<Project> {
-  const { data, error } = await supabase.from('projects').insert(input).select().single();
-  throwIfError(error);
-  return data;
+  return request<Project>('/projects', { method: 'POST', body: JSON.stringify(input) });
 }
 
 export async function updateProject(id: string, input: Partial<ProjectInput>): Promise<Project> {
-  const { data, error } = await supabase.from('projects').update(input).eq('id', id).select().single();
-  throwIfError(error);
-  return data;
+  return request<Project>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(input) });
 }
 
 export async function deleteProject(id: string): Promise<void> {
-  const { error } = await supabase.from('projects').delete().eq('id', id);
-  throwIfError(error);
+  return request<void>(`/projects/${id}`, { method: 'DELETE' });
 }
 
 // ---- Tasks ----
 
 export async function fetchTasksByProject(projectId: string): Promise<Task[]> {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('project_id', projectId)
-    .order('created_at', { ascending: false });
-  throwIfError(error);
-  return data ?? [];
+  return request<Task[]>(`/projects/${projectId}/tasks`);
 }
 
 export async function fetchAllTasks(): Promise<Task[]> {
-  const { data, error } = await supabase
-    .from('tasks')
-    .select('*, projects(name)')
-    .order('created_at', { ascending: false });
-  throwIfError(error);
-  return data ?? [];
+  return request<Task[]>('/tasks');
 }
 
 export async function createTask(input: TaskInput): Promise<Task> {
-  const { data, error } = await supabase.from('tasks').insert(input).select().single();
-  throwIfError(error);
-  return data;
+  return request<Task>('/tasks', { method: 'POST', body: JSON.stringify(input) });
 }
 
 export async function updateTask(id: string, input: Partial<TaskInput>): Promise<Task> {
-  const { data, error } = await supabase.from('tasks').update(input).eq('id', id).select().single();
-  throwIfError(error);
-  return data;
+  return request<Task>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(input) });
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const { error } = await supabase.from('tasks').delete().eq('id', id);
-  throwIfError(error);
+  return request<void>(`/tasks/${id}`, { method: 'DELETE' });
 }

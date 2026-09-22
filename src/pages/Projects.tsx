@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchProjects, createProject, deleteProject } from '@/lib/api';
 import type { Project, ProjectStatus, ProjectInput } from '@/types';
-import { PROJECT_STATUS_OPTIONS, PROJECT_STATUS_LABELS } from '@/types';
+import { PROJECT_STATUS_OPTIONS } from '@/types';
 import { SectionSpinner } from '@/components/ui/Spinner';
 import { Button } from '@/components/ui/Button';
 import { Input, Select, Textarea } from '@/components/ui/Form';

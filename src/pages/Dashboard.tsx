@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { fetchProjects, fetchAllTasks, createTask, updateTask, deleteTask } from '@/lib/api';
-import type { Project, Task } from '@/types';
+import type { Project, Task, TaskInput, TaskPriority, TaskStatus } from '@/types';
 import { SectionSpinner } from '@/components/ui/Spinner';
 import { ProjectStatusBadge, TaskStatusBadge, PriorityBadge } from '@/components/ui/Badges';
 import {
@@ -227,7 +227,7 @@ export function DashboardPage() {
                           const t = await fetchAllTasks();
                           setTasks(t);
                         } catch (err) {
-                          // ignore error handling here
+                          setError(err instanceof Error ? err.message : 'Failed to delete task');
                         }
                       }}
                       title="Delete task"
@@ -286,8 +286,8 @@ function TaskFormModal({
   const isEdit = !!task;
   const [name, setName] = useState(task?.name ?? '');
   const [description, setDescription] = useState(task?.description ?? '');
-  const [priority, setPriority] = useState<'low' | 'medium' | 'high'>(task?.priority ?? 'medium');
-  const [status, setStatus] = useState<'pending' | 'in_progress' | 'completed'>(task?.status ?? 'pending');
+  const [priority, setPriority] = useState<TaskPriority>(task?.priority ?? 'medium');
+  const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'pending');
   const [dueDate, setDueDate] = useState(task?.due_date ?? '');
   const [projectId, setProjectId] = useState<string>(task?.project_id ?? projects[0]?.id ?? '');
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -303,7 +303,7 @@ function TaskFormModal({
       setDueDate(task.due_date ?? '');
       setProjectId(task.project_id ?? projects[0]?.id ?? '');
     }
-  }, [task]);
+  }, [task, projects]);
 
   const validate = () => {
     const e: Record<string, string> = {};
@@ -313,13 +313,13 @@ function TaskFormModal({
     return Object.keys(e).length === 0;
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setServerError('');
     if (!validate()) return;
     setLoading(true);
     try {
-      const input = {
+      const input: TaskInput = {
         name: name.trim(),
         description: description.trim() || null,
         priority,
@@ -330,7 +330,7 @@ function TaskFormModal({
       if (isEdit && task) {
         await updateTask(task.id, input);
       } else {
-        await createTask(input as any);
+        await createTask(input);
       }
       await onSaved();
     } catch (err) {
@@ -371,12 +371,12 @@ function TaskFormModal({
               <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="mt-1 w-full px-3 py-2 border rounded-lg" rows={3} />
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <select value={priority} onChange={(e) => setPriority(e.target.value as any)} className="px-3 py-2 border rounded-lg">
+              <select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)} className="px-3 py-2 border rounded-lg">
                 <option value="low">Low</option>
                 <option value="medium">Medium</option>
                 <option value="high">High</option>
               </select>
-              <select value={status} onChange={(e) => setStatus(e.target.value as any)} className="px-3 py-2 border rounded-lg">
+              <select value={status} onChange={(e) => setStatus(e.target.value as TaskStatus)} className="px-3 py-2 border rounded-lg">
                 <option value="pending">Pending</option>
                 <option value="in_progress">In Progress</option>
                 <option value="completed">Completed</option>
@@ -388,7 +388,9 @@ function TaskFormModal({
             </div>
             <div className="flex gap-3 pt-2">
               <button type="button" onClick={onClose} className="flex-1 px-3 py-2 border rounded-lg">Cancel</button>
-              <button type="submit" className="flex-1 px-3 py-2 bg-slate-900 text-white rounded-lg">Create Task</button>
+              <button type="submit" disabled={loading} className="flex-1 px-3 py-2 bg-slate-900 text-white rounded-lg disabled:opacity-50">
+                {loading ? 'Saving...' : isEdit ? 'Save Changes' : 'Create Task'}
+              </button>
             </div>
           </form>
         </div>
