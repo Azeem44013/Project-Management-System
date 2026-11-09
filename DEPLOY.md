@@ -30,7 +30,7 @@ Set these repository secrets in GitHub: `VERCEL_TOKEN`, `RENDER_API_KEY`, `RENDE
 
 Vercel
 
-- Add a Vercel project connected to this repo (or let the action deploy directly). Set `VITE_API_URL` in Vercel to your backend URL.
+- Add a Vercel project connected to this repo. When using the included Vercel API function, leave `VITE_API_URL` unset so the frontend uses the same-origin `/api` route. Set it only when using a separate public backend URL; localhost URLs are ignored in production builds.
 
 Render
 
